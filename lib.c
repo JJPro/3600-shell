@@ -71,8 +71,9 @@ void shift_elements(char* array[], int *length, int start_index, int many){
     for (int i=start_index; i<(*length - many); i++){
         array[i] = array[i+many];
     }
-    array[*length] = NULL; // move the NULL element as well
     *length = *length - many;
+    array[*length] = NULL; // move the NULL element as well
+
 }
 
 /* parse the input stream for argc and args

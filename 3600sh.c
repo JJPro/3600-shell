@@ -59,6 +59,7 @@ int main(int argc, char*argv[]) {
 //
 void do_exit() {
   printf("So long and thanks for all the fish!\n");
+  while (wait(NULL) > 0){}
   exit(0);
 }
 
@@ -72,15 +73,15 @@ void parse_args(int argc, char* args[]){
   int red_out_pos = 0;
   int red_err_pos = 0;
     
+    fflush(stdin);fflush(stdout); fflush(stderr);
   // keep a copy of original file descriptors of stdin, stdout, stderr
     int ori_fds[3];
-    ori_fds[0] = dup(STDIN_FILENO);
-    ori_fds[1] = dup(STDOUT_FILENO);
-    ori_fds[2] = dup(STDERR_FILENO);
+    ori_fds[0] = dup(0);
+    ori_fds[1] = dup(1);
+    ori_fds[2] = dup(2);
 
   int i = 0;
-  int redirected = 0;
-  int fd;
+//  int redirected = 0;
   int newfile[3] = {-1, -1, -1};
 
   for (i=0; i < argc; i++){
@@ -98,21 +99,18 @@ void parse_args(int argc, char* args[]){
             fprintf(stderr, "Error: Invalid syntax.\n");
             return;
         }
-        fd = open(args[red_out_pos], O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
-        if (fd == -1){
+        newfile[1] = open(args[red_out_pos], O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+        if (newfile[1] == -1){
             fprintf(stderr, "Error: Unable to open redirection file.\n");
             return;
         }
-        
-        // redirecting output to the file
-        fflush(stdout);
-//        close(STDOUT_FILENO);
-        newfile[1] = redirect(STDOUT_FILENO, fd);
-        close(fd);
+        dup2(newfile[1], 1);
+        close(newfile[1]);
 
-        redirected = 1;
+//        redirected = 1;
         // TODO: shift-array
         shift_elements(args, &argc, i, 2);
+        i = i-1; // repoint the counter
 
     } else if (strcmp(args[i], "<") == 0){
 
@@ -128,25 +126,28 @@ void parse_args(int argc, char* args[]){
             fprintf(stderr, "Error: Invalid syntax.\n");
             return;
         }
-	if ( (red_in_pos+1 <= argc-1) &&
-      	     (strcmp(args[red_in_pos], "<") != 0) &&
-            (strcmp(args[red_in_pos], ">") != 0) &&
-            (strcmp(args[red_in_pos], "2>") != 0))
-	{
+        
+        if ( (red_in_pos+1 <= argc-1) &&
+      	     (strcmp(args[red_in_pos+1], "<") != 0) &&
+            (strcmp(args[red_in_pos+1], ">") != 0) &&
+            (strcmp(args[red_in_pos+1], "2>") != 0))
+        {
 	    fprintf(stderr, "Error: Invalid syntax.\n");
             return;
         }
-        fd = open(args[red_in_pos], O_RDONLY);
-        if (fd == -1){
+        
+        newfile[0] = open(args[red_in_pos], O_RDONLY);
+        if (newfile[0] == -1){
             fprintf(stderr, "Error: Unable to open redirection file.\n");
             return;
         }
-//        close(STDIN_FILENO);
-        newfile[0] = redirect(STDIN_FILENO, fd);
-        close(fd);
-        redirected = 1;
+        dup2(newfile[0], 0);
+        close(newfile[0]);
+        
+//        redirected = 1;
         // TODO: shift-array
         shift_elements(args, &argc, i, 2);
+        i = i-1; // repoint the counter
     } else if (strcmp(args[i], "2>") == 0){
 
         red_err_pos = i+1;
@@ -161,21 +162,23 @@ void parse_args(int argc, char* args[]){
             fprintf(stderr, "Error: Invalid syntax.\n");
             return;
         }
-        fd = open(args[red_err_pos], O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
-        if (fd == -1){
+        newfile[2] = open(args[red_err_pos], O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+        if (newfile[2] == -1){
             fprintf(stderr, "Error: Unable to open redirection file.\n");
             return;
         }
-//        close(STDERR_FILENO);
-        newfile[2] = redirect(STDERR_FILENO, fd);
-        close(fd);
-        redirected = 1;
+        dup2(newfile[2], 2);
+        close(newfile[2]);
+        
+//        redirected = 1;
         // TODO: shift-array
         shift_elements(args, &argc, i, 2);
+        i = i-1; // repoint the counter
     } else if (strcmp(args[i], "&") == 0){
         if (i == argc-1 ){
           background = true;
           args[i] = NULL;
+          argc = i;
         } else {
             fprintf(stderr, "Error: Invalid syntax.\n");
             // abort this line of command
@@ -184,6 +187,7 @@ void parse_args(int argc, char* args[]){
         }
     }
   }
+    
 
   /** detect more than one stdin or stdout or stderr redirection **/
   int count_red_in, count_red_out, count_red_err;
@@ -202,20 +206,16 @@ void parse_args(int argc, char* args[]){
         return;
   }
   /** Done detecting .... **/
-
-
-  if (!redirected)
-    runcmd(args[0], args, background);
-  background = false; // reset background
     
-  // close newfile
-    for (int i=0; i< 3; i++){
-        if (newfile[i] != -1)
-            close(newfile[i]);
-    }
-
-  // reset stdin, stdout, stderr
-  dup2(ori_fds[0], STDIN_FILENO);
-  dup2(ori_fds[1], STDOUT_FILENO);
-  dup2(ori_fds[2], STDERR_FILENO);
+    
+  runcmd(args[0], args, background);
+  background = false; // reset background
+  /**** restore file descriptors ****/
+    fflush(stdin);fflush(stdout); fflush(stderr);
+    dup2(ori_fds[0], 0);
+    dup2(ori_fds[1], 1);
+    dup2(ori_fds[2], 2);
+    close(ori_fds[0]);
+    close(ori_fds[1]);
+    close(ori_fds[2]);
 }
