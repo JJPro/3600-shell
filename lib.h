@@ -16,9 +16,10 @@ bool background;
 void prompt();
 int getargs(int * argc, char* args[]);
 void runcmd(char *cmd, char* argv[], bool background);
-void redirect(int old, int new);
+int redirect(int old, int new);
 void error_exit( int status, const char *error_msg );
 void shift_elements(char* array[], int *length, int start_index, int many);
+
 
 
 ////// Define Pool structure to hold any number of variables /////

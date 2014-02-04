@@ -43,12 +43,14 @@ void runcmd(char *cmd, char* argv[], bool background){
 }
 
 /* redirect file stream */
-void redirect(int old, int new){
+int redirect(int old, int new){
   // dup2 makes newfd the copy of oldfd, then closes the newfd, and returns newfd
-  if (dup2(new, old) == -1){
+    int file = dup2(new, old);
+  if (file == -1){
     perror("dup2");
     exit(EXIT_FAILURE);
   }
+    return file;
 }
 
 /* Terminate the program with an error message: */
@@ -64,6 +66,7 @@ void shift_elements(char* array[], int *length, int start_index, int many){
     for (int i=start_index; i<(*length - many); i++){
         array[i] = array[i+many];
     }
+    array[*length] = NULL; // move the NULL element as well
     *length = *length - many;
 }
 
@@ -71,6 +74,7 @@ void shift_elements(char* array[], int *length, int start_index, int many){
  * return:
  * 		0 for \n
  * 	   -1 for EOF
+ *     -2 for error
  */ 
 int getargs(int * argc, char* args[]){
   fflush(stdin);
@@ -154,9 +158,14 @@ int getargs(int * argc, char* args[]){
           }
           in_word = true;
         }else{
-          fprintf(stderr, "Error: Unrecognized escape sequence.");
-          *argc = i;
-          return 0; // return 0 to continue to parse the next line
+          fprintf(stderr, "Error: Unrecognized escape sequence.\n");
+          *argc = 0; *args = NULL; // set argc to 0 to indicate an error
+          // eat all rest char in this line
+            while (( (c=getchar()) != EOF) && c != '\n'){}
+            if ( c == EOF)
+                return EOF;
+            else
+                return 0;
         }
       }
     else { // other character, might be backslash

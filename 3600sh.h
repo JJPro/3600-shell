@@ -11,7 +11,7 @@
 #ifndef _3600sh_h
 #define _3600sh_h
 
-#define ARGS_SIZE 20
+#define ARGS_SIZE 100
 
 #define _BSD_SOURCE
 
