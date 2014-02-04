@@ -13,14 +13,15 @@
 
 #define USE(x) (x) = (x)
 extern pool_t* pool;
-// extern bool background;
+extern bool background;
 
 int main(int argc, char*argv[]) {
   // Code which sets stdout to be unbuffered
   // This is necessary for testing; do not change these lines
   USE(argc);
   USE(argv);
-  setvbuf(stdout, NULL, _IONBF, 0); 
+  setvbuf(stdout, NULL, _IONBF, 0);
+  background = false;
   
   // Main loop that reads a command and executes it
   while (1) {         
@@ -62,7 +63,7 @@ void do_exit() {
 }
 
 
-/* parse the args list for special keywords, such as exit, >, <, 2>  */
+/* parse the args list for special keywords, such as exit, >, <, 2>, &  */
 void parse_args(int argc, char* args[]){
   if (strcmp(*args, "exit") == 0) // exit the program when first cmd is exit
     do_exit();
@@ -124,8 +125,12 @@ void parse_args(int argc, char* args[]){
         //prompt();
         break;
       }
+    } else if (strcmp(args[i], "&") == 0){
+        background = true;
+        args[i] = NULL;
     }
   }
   if (!redirected)
-    runcmd(args[0], args, 0);
+    runcmd(args[0], args, background);
+    background = false; // reset background
 }

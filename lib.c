@@ -31,9 +31,9 @@ void runcmd(char *cmd, char* argv[], bool background){
     fprintf(stderr, "Error: Command not found.\n"); // an error should be reported if we reach here
     exit(EXIT_FAILURE);
   } else { // in parent process
-    if (background) // run child process in background?
-      prompt();	// yes, issue a new prompt immediately without waiting for the process to end
-    else { // no
+    if (background){ // run child process in background?
+//      prompt();	// yes, issue a new prompt immediately without waiting for the process to end
+    }else { // no
       // wait for child process to end 
       waitpid(p, NULL, 0);
       // issue a new prompt
@@ -55,6 +55,16 @@ void redirect(int old, int new){
 void error_exit( int status, const char *error_msg ){
   fprintf(stderr, "%s\n", error_msg);
   exit(status);
+}
+
+/* delete [many] number of elements starting from index [start_index], from the array, and shift the rest elements of the array forward 
+    This function will update the array and its length
+ */
+void shift_elements(char* array[], int *length, int start_index, int many){
+    for (int i=start_index; i<(*length - many); i++){
+        array[i] = array[i+many];
+    }
+    *length = *length - many;
 }
 
 /* parse the input stream for argc and args
@@ -94,7 +104,7 @@ int getargs(int * argc, char* args[]){
           n = 1;
         } // not in a word, skip the character
       }
-    else if ( ( (c == ' ') || (c=='\t') ) && escape_hint ) // escaped whitespace character
+    else if ( ( (c == ' ') || (c=='t') ) && escape_hint ) // escaped whitespace character
       {
         escape_hint = false; // reset flag
         if (in_word){
@@ -103,8 +113,12 @@ int getargs(int * argc, char* args[]){
             arg = (char*) calloc(ARG_LEN, ++n);
             add_to_pool(arg);
             args[i] = arg;
-          } 
-          *(arg+j) = c;
+          }
+            
+          if (c==' ')
+              *(arg+j) = ' ';
+          else
+              *(arg+j) = '\t';
           j++;
         } else {
           // TODO: start new string with the char
