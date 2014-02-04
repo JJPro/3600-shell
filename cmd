@@ -1,1 +1,1 @@
-ls < /fdiononiono
+ls < /bin < /home

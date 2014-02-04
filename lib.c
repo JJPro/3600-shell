@@ -28,7 +28,12 @@ void runcmd(char *cmd, char* argv[], bool background){
   else if (p == 0){ // in child process
     // replace the child process with the new process
     execvp(cmd, argv);
-    fprintf(stderr, "Error: Command not found.\n"); // an error should be reported if we reach here
+    if (errno == ENOENT)
+      fprintf(stderr, "Error: Command not found.\n"); // an error should be reported if we reach here
+    else if (errno == EACCES)
+      fprintf(stderr, "Error: Permission denied.\n");
+    else 
+      fprintf(stderr, "Error: Failed to execute %s.\n", cmd);
     exit(EXIT_FAILURE);
   } else { // in parent process
     if (background){ // run child process in background?

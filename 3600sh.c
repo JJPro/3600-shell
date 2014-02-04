@@ -128,6 +128,14 @@ void parse_args(int argc, char* args[]){
             fprintf(stderr, "Error: Invalid syntax.\n");
             return;
         }
+	if ( (red_in_pos+1 <= argc-1) &&
+      	     (strcmp(args[red_in_pos], "<") != 0) &&
+            (strcmp(args[red_in_pos], ">") != 0) &&
+            (strcmp(args[red_in_pos], "2>") != 0))
+	{
+	    fprintf(stderr, "Error: Invalid syntax.\n");
+            return;
+        }
         fd = open(args[red_in_pos], O_RDONLY);
         if (fd == -1){
             fprintf(stderr, "Error: Unable to open redirection file.\n");
@@ -176,6 +184,25 @@ void parse_args(int argc, char* args[]){
         }
     }
   }
+
+  /** detect more than one stdin or stdout or stderr redirection **/
+  int count_red_in, count_red_out, count_red_err;
+  count_red_in = count_red_out = count_red_err = 0;
+  for(int i=0; i< argc; i++){
+    if (strcmp(args[i], "<") == 0)
+      count_red_in++;
+    else if (strcmp(args[i], ">") == 0)
+      count_red_out++;
+    else if (strcmp(args[i], "2>") == 0)
+      count_red_err++;
+  }
+  if (count_red_in > 1 || count_red_out > 1 || count_red_err >1)
+  {
+	fprintf(stderr, "Error: Invalid syntax.\n");
+        return;
+  }
+  /** Done detecting .... **/
+
 
   if (!redirected)
     runcmd(args[0], args, background);
