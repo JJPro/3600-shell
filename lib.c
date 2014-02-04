@@ -8,9 +8,10 @@ void prompt() {
   char host[50];
   gethostname(host, 50);
   // get current working directory
-  char *wd = getenv("PWD");
+  char cwd[200];
+  getcwd(cwd, 199);
 
-  printf("%s@%s:%s> ", user, host, wd);
+  printf("%s@%s:%s> ", user, host, cwd);
 }
 
 /* run the given command with given argument list. 
@@ -24,7 +25,7 @@ void runcmd(char *cmd, char* argv[], bool background){
   pid_t p; 
   p = fork();
   if (p < 0)
-    fprintf(stderr, "error on fork()\n");
+    fprintf(stderr, "Error: error on fork()\n");
   else if (p == 0){ // in child process
     // replace the child process with the new process
     execvp(cmd, argv);
@@ -45,23 +46,6 @@ void runcmd(char *cmd, char* argv[], bool background){
       //prompt();
     }
   }
-}
-
-/* redirect file stream */
-int redirect(int old, int new){
-  // dup2 makes newfd the copy of oldfd, then closes the newfd, and returns newfd
-    int file = dup2(new, old);
-  if (file == -1){
-    perror("dup2");
-    exit(EXIT_FAILURE);
-  }
-    return file;
-}
-
-/* Terminate the program with an error message: */
-void error_exit( int status, const char *error_msg ){
-  fprintf(stderr, "%s\n", error_msg);
-  exit(status);
 }
 
 /* delete [many] number of elements starting from index [start_index], from the array, and shift the rest elements of the array forward 
@@ -241,6 +225,20 @@ int getargs(int * argc, char* args[]){
     return 0;
   else 
     return EOF;
+}
+
+
+////////// Extra Features //////////
+
+/* change the working directory */
+/* Return: 
+      0 on success
+      -1 on failure
+   Check errno for exact error message
+ */
+int change_dir(char* dest){
+    return chdir(dest);
+
 }
 
 

@@ -17,9 +17,11 @@ bool background;
 void prompt();
 int getargs(int * argc, char* args[]);
 void runcmd(char *cmd, char* argv[], bool background);
-int redirect(int old, int new);
-void error_exit( int status, const char *error_msg );
 void shift_elements(char* array[], int *length, int start_index, int many);
+
+///// Extra Features ////////
+char prev_dir[200];
+int change_dir(char* dest);
 
 
 
@@ -39,35 +41,3 @@ pool_t* pool;
 void init_pool();
 void add_to_pool(char * arg);
 void free_pool();
-
-
-// Note: 
-// i++ on Terminating a string
-// Reset j on Terminating a string 
-// Reset n on Terminating a string
-
-// #define Terminate 
-// if ( j >= ARG_LEN * n -1){
-// 	arg = (char*) calloc(ARG_LEN * (++n));
-// 	add_to_pool(arg);
-// } 
-// *(arg+j) = '\0';
-// i++;
-// j = 0;
-// n = 1;
-
-
-// #define Append 
-// if ( j >= ARG_LEN * n -1){
-// 	arg = (char*) calloc(ARG_LEN * (++n));
-// 	add_to_pool(arg);
-// } 
-// *(arg+j) = c;
-// j++;
-
-
-// #define Start_New 
-// arg = (char*) malloc(ARG_LEN);
-// add_to_pool(arg);
-// *(arg+j) = c;
-// j++;

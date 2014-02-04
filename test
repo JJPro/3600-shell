@@ -91,7 +91,9 @@ sub test {
     my $diff = `diff .expected .actual | egrep "^([<>]|Binary)"`;
     if ($diff) {
       $diff = `diff -y .expected .actual`;
+      `cp .expected .actual ~`;
     }
+
     `rm .actual .expected .data`;
 
     if (! $diff) {

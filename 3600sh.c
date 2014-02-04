@@ -14,6 +14,7 @@
 #define USE(x) (x) = (x)
 extern pool_t* pool;
 extern bool background;
+extern char prev_dir[];
 
 int main(int argc, char*argv[]) {
   // Code which sets stdout to be unbuffered
@@ -22,6 +23,7 @@ int main(int argc, char*argv[]) {
   USE(argv);
   setvbuf(stdout, NULL, _IONBF, 0);
   background = false;
+  strcpy(prev_dir, getenv("PWD"));
   
   // Main loop that reads a command and executes it
   while (1) {         
@@ -64,10 +66,36 @@ void do_exit() {
 }
 
 
-/* parse the args list for special keywords, such as exit, >, <, 2>, &  */
+/* parse the args list for special keywords, such as exit, cd, >, <, 2>, &  */
 void parse_args(int argc, char* args[]){
   if (strcmp(*args, "exit") == 0) // exit the program when first cmd is exit
     do_exit();
+    
+  if (argc >= 1 &&
+      strcmp(args[0], "cd") == 0) // change working directory
+  {
+      char* dest;
+      if (argc == 1 ||
+          strcmp(args[1], "~") == 0)
+          dest = getenv("HOME");
+      else
+      {
+          if (strcmp(args[1], "-") == 0){
+              char tmp[200];
+              getcwd(tmp, 199);
+              if ( change_dir(prev_dir) != 0 )
+                  fprintf(stderr, "Error: failed to change directory.\n");
+              strcpy(prev_dir, tmp);
+              return;
+          }
+          else
+              dest = args[1];
+      }
+      getcwd(prev_dir, 199);
+      if ( change_dir(dest) != 0 )
+          fprintf(stderr, "Error: failed to change directory.\n");
+      return;
+  }
   // detect stream redirections:
   int red_in_pos = 0;
   int red_out_pos = 0;
@@ -81,7 +109,6 @@ void parse_args(int argc, char* args[]){
     ori_fds[2] = dup(2);
 
   int i = 0;
-//  int redirected = 0;
   int newfile[3] = {-1, -1, -1};
 
   for (i=0; i < argc; i++){
@@ -107,7 +134,6 @@ void parse_args(int argc, char* args[]){
         dup2(newfile[1], 1);
         close(newfile[1]);
 
-//        redirected = 1;
         // TODO: shift-array
         shift_elements(args, &argc, i, 2);
         i = i-1; // repoint the counter
@@ -144,7 +170,6 @@ void parse_args(int argc, char* args[]){
         dup2(newfile[0], 0);
         close(newfile[0]);
         
-//        redirected = 1;
         // TODO: shift-array
         shift_elements(args, &argc, i, 2);
         i = i-1; // repoint the counter
@@ -170,7 +195,6 @@ void parse_args(int argc, char* args[]){
         dup2(newfile[2], 2);
         close(newfile[2]);
         
-//        redirected = 1;
         // TODO: shift-array
         shift_elements(args, &argc, i, 2);
         i = i-1; // repoint the counter

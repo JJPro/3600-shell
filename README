@@ -1,0 +1,94 @@
+Team: teamvictory
+Members: Blakely V. Madden, Lu Ji
+
+
+High-level approach description: 
+    Source Code Structure: 
+    	To make the code clean and organized, we split the source into two group of files: 
+   			* 3600sh.h/.c : This only includes the code that starts the programs. 
+   			* lib.h/.c    : Includes all the utility functions to be called within 3600sh.c.
+   	Autorelease Pool concept to efficiently manage memory: 
+   		Pool is defined as a single linked list storing manually allocated argument variables. 
+   		
+   		Concept: 
+   			1. Create a pool object before parsing the command and arguments. 
+   			2. Add each command and argument string into the pool while we analyzing through them
+   			3. Free the pool after the execution of the command with those arguments. 
+   		This ensures no memory leak/waste. 
+
+   		Usage: 
+   			To make the pool architecture easy to use without understanding what that is, 
+   			we provide APIs (utility functions) to perform all Pool operations: 
+   				- init_pool();
+   				- add_to_pool(char* element);
+   				- free_pool();
+
+   	Library API (Global Variables and Function Definitions): 
+   		* 3600sh: 
+   			+ Functions:
+	   			- main()
+	   			- do_exit()
+	   			- parse_args(int argc, char* args[])
+   		* lib: 
+   			+ Global Vars: 
+   				- bool background     : whether to run the command in background
+   				- pool_t * pool       : autorelease pool object
+   				- char prev_dir[200]  : store the previous working directory to support [cd -] command, which goes back to previous working dir. 
+   			+ Functions: 
+   				1. **** Usual Operations ****
+   				- prompt()
+   				- getargs(int *argc, char* args[])
+   				- runcmd(char *cmd, char* argv[], bool background)
+   				- shift_elements(char* array[], int* length, int start_index, int many)
+   					Description: 
+   						delete [many] number of elements starting from index [start_index], from the array, and shift the rest elements of the array forward. 
+   						Note: This function updates the array and its length
+   				2. **** Pool Operations ****
+   				- init_pool()
+   				- add_to_pool(char *arg)
+   				- free_pool();
+   				3. **** Extra Features: supporting cd ****
+   				- change_dir(char* dest)
+
+
+Challenges: 
+	* Share global variables across source files: 
+		declaire variable as extern, so it looks var in other files.  
+	* Redirection: 
+		1. our shell sometimes printed out stuff twice: 
+		Solution: 
+			fflush all buffers(stdin, stdout, stderr) before and after the redirection
+		2. Failed to make redirection back. 
+		Solution: 
+			we find a example template StackOverflow: 
+				int bak, new;
+				fflush(stdout);
+				bak = dup(1);
+				new = open("/dev/null", O_WRONLY);
+				dup2(new, 1);
+				close(new);
+				/* your code here ... */
+				fflush(stdout);
+				dup2(bak, 1);
+				close(bak);
+
+A list of properties/features of your design that you think is good: 
+* split utility functions to lib.h/lib.c files, to make the source code clean, organized and generic. Make it easy to review and reuse. 
+* pool structure (single linked list) design to collect all malloced memories and free them together after usage, which ensure the program to be memory efficient
+	- We have hight level pool utilities functions to make it convenient to use without understanding what pool is.
+
+
+An overview of how you tested your code: 
+	We take the combination of printf and MinUnit testing framework
+	(Ref: JTN002-MinUnit: http://www.jera.com/techinfo/jtns/jtn002.html)
+
+
+
+Extra features of our implementation: 
+ * supporting cd:
+ 	** cd
+ 	** cd ~
+ 	** cd -
+ 	** cd .. && ../
+ 	** cd . && ./
+ 	** cd absolute_path
